@@ -1,0 +1,50 @@
+openapi: 3.0.0
+info:
+  title: URL-Shortener
+  version: 0.1.0
+servers:
+  - url: http://localhost:4543/
+    description: Local Deployment
+
+paths:
+  /api:
+    post:
+      summary: Returns a list of users.
+      description: Optional extended description in CommonMark or HTML.
+      responses:
+        '200':
+          description: Short url is generated
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 'http://localhost:4543/A1s23Sa'
+        '500':
+          description: Internal Error
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 'Internal Error. Please, Try again later.'
+
+  /api/{id}:
+    get:
+      summary: Return full url
+      parameters:
+        - name: id
+          in: path
+          description: Generated short URL ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success, url exists
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 'https://www.full.magic.url?id=123'
+
+        '404':
+          description: Not found

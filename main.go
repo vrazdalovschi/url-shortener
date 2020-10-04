@@ -20,7 +20,7 @@ func main() {
 	fs := http.FileServer(http.Dir("./api/"))
 	r.PathPrefix("/swaggerui/").Handler(http.StripPrefix("/swaggerui/", fs))
 	r.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
-		httpSwagger.URL("/swaggerui/swagger.yaml"),
+		httpSwagger.URL("http://localhost:8080/swaggerui/swagger.yaml"),
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("none"),
 		httpSwagger.DomID("#swagger-ui"),
@@ -34,8 +34,8 @@ func main() {
 		errs <- fmt.Errorf("%s", <-c)
 	}()
 	go func() {
-		log.Println("transport", "HTTP", "addr", "localhost:8085")
-		errs <- http.ListenAndServe("localhost:8085", r)
+		log.Println("transport", "HTTP", "addr", ":8080")
+		errs <- http.ListenAndServe(":8080", r)
 	}()
 
 	log.Println("exit", <-errs)

@@ -1,0 +1,37 @@
+version: '3.5'
+volumes:
+  db:
+services:
+  url-shortener:
+    build: ./..
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: 'db'
+      DB_PORT: '5432'
+      DB_USER: shortener
+      DB_PASSWORD: shortener
+      DB_NAME: shortener
+  redis:
+    image: redis:alpine
+    deploy:
+      replicas: 6
+      placement:
+        max_replicas_per_node: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+  db:
+    image: postgres
+    volumes:
+      - /volumes/url-shortener/postgres-data:/data/postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: shortener
+      POSTGRES_PASSWORD: shortener

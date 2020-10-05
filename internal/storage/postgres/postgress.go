@@ -41,7 +41,7 @@ func New(cfg Configuration) (Service, error) {
 
 	// Create table if not exists
 	strQuery := "CREATE TABLE IF NOT EXISTS url (shortenedId VARCHAR NOT NULL UNIQUE, originalUrl VARCHAR not NULL, " +
-		"apiKey VARCHAR not NULL, creationTime datetime not NULL, expirationDate datetime not NULL);"
+		"apiKey VARCHAR not NULL, creationTime timestamp not NULL, expirationDate timestamp not NULL);"
 
 	_, err = db.Exec(strQuery)
 	if err != nil {

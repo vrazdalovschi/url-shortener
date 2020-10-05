@@ -17,7 +17,7 @@ import (
 func main() {
 	fs := flag.NewFlagSetWithEnvPrefix(os.Args[0], "", flag.ExitOnError)
 	var (
-		httpAddr   = fs.String("DASHBOARD_API_HTTP_ADDR", ":8080", "HTTP endpoint to use for endpoints")
+		httpAddr   = fs.String("HTTP_ADDR", ":8080", "HTTP endpoint to use for endpoints")
 		dbHost     = fs.String("DB_HOST", "localhost", "DB Host")
 		dbPort     = fs.String("DB_PORT", "5432", "DB Port")
 		dbUser     = fs.String("DB_USER", "url-shortener", "DB Username")

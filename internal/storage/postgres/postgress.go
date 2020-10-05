@@ -4,15 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/vrazdalovschi/url-shortener/internal/storage"
+	"github.com/vrazdalovschi/url-shortener/internal/domain"
 	"time"
 
 	// This loads the postgres drivers.
 	_ "github.com/lib/pq"
 )
 
+type Service interface {
+	Save(ctx context.Context, apiKey, originalUrl, shortenedId, expiryDate string) error
+	Load(ctx context.Context, shortenedId string) (originalUrl string, err error)
+	Describe(ctx context.Context, shortenedId string) (*domain.Item, error)
+	Close() error
+}
+
+type Configuration struct {
+	Host, Port, User, Password, DbName string
+}
+
 // New returns a postgres backed storage service.
-func New(cfg storage.Configuration) (storage.Service, error) {
+func New(cfg Configuration) (Service, error) {
 	// Connect postgres
 	connect := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DbName)
@@ -52,19 +63,19 @@ func (p *postgres) Load(ctx context.Context, shortenedId string) (originalUrl st
 	if err != nil {
 		return "", err
 	}
-	item := storage.Item{ShortenedId: shortenedId}
+	item := domain.Item{ShortenedId: shortenedId}
 	if err = res.Scan(&item.OriginalURL); res != nil {
 		return "", err
 	}
 	return item.OriginalURL, nil
 }
 
-func (p *postgres) Describe(ctx context.Context, shortenedId string) (*storage.Item, error) {
+func (p *postgres) Describe(ctx context.Context, shortenedId string) (*domain.Item, error) {
 	res, err := p.db.QueryContext(ctx, "SELECT originalUrl, apiKey, enable, expiryDate FROM url WHERE shortenedId = $1 limit 1", shortenedId)
 	if err != nil {
 		return nil, err
 	}
-	item := storage.Item{ShortenedId: shortenedId}
+	item := domain.Item{ShortenedId: shortenedId}
 	if err = res.Scan(&item.OriginalURL, &item.ApiKey, &item.Enabled, &item.ExpiryDate); res != nil {
 		return nil, err
 	}

@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/namsral/flag"
+	"github.com/vrazdalovschi/url-shortener/internal/router"
+	"github.com/vrazdalovschi/url-shortener/internal/service"
+	"github.com/vrazdalovschi/url-shortener/internal/storage/postgres"
 	"os"
 	"os/signal"
 	"syscall"
@@ -13,19 +15,30 @@ import (
 )
 
 func main() {
-	r := mux.NewRouter()
-	r.HandleFunc("/api", IsNotImplementedHandler)
-	r.HandleFunc("/api/{shortedUrlId}", IsNotImplementedHandler)
+	fs := flag.NewFlagSetWithEnvPrefix(os.Args[0], "", flag.ExitOnError)
+	var (
+		httpAddr   = fs.String("DASHBOARD_API_HTTP_ADDR", ":8080", "HTTP endpoint to use for endpoints")
+		dbHost     = fs.String("DB_HOST", "localhost", "DB Host")
+		dbPort     = fs.String("DB_PORT", "5432", "DB Port")
+		dbUser     = fs.String("DB_USER", "url-shortener", "DB Username")
+		dbPassword = fs.String("DB_PASSWORD", "root", "DB Password")
+		dbName     = fs.String("DB_NAME", "shortener", "DB name")
+	)
+	_ = fs.Parse(os.Args[1:])
 
-	fs := http.FileServer(http.Dir("./api/"))
-	r.PathPrefix("/swaggerui/").Handler(http.StripPrefix("/swaggerui/", fs))
-	r.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:8080/swaggerui/swagger.yaml"),
-		httpSwagger.DeepLinking(true),
-		httpSwagger.DocExpansion("none"),
-		httpSwagger.DomID("#swagger-ui"),
-	))
-	http.Handle("/", r)
+	configuration := postgres.Configuration{
+		Host:     *dbHost,
+		Port:     *dbPort,
+		User:     *dbUser,
+		Password: *dbPassword,
+		DbName:   *dbName,
+	}
+	st, err := postgres.New(configuration)
+	if err != nil {
+		log.Fatal(err)
+	}
+	svc := service.NewService(st)
+	r := router.New(svc, *httpAddr)
 
 	errs := make(chan error)
 	go func() {
@@ -34,16 +47,9 @@ func main() {
 		errs <- fmt.Errorf("%s", <-c)
 	}()
 	go func() {
-		log.Println("transport", "HTTP", "addr", ":8080")
-		errs <- http.ListenAndServe(":8080", r)
+		log.Println("transport", "HTTP", "addr", *httpAddr)
+		errs <- http.ListenAndServe(*httpAddr, r)
 	}()
 
-	log.Println("exit", <-errs)
-}
-
-func IsNotImplementedHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-	if _, err := w.Write([]byte("It's not implemented")); err != nil {
-		log.Printf("Got %v for request: %s", err, r.URL.Path)
-	}
+	log.Fatal("exit", <-errs)
 }

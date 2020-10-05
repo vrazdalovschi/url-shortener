@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/vrazdalovschi/url-shortener/internal/domain"
+	"github.com/vrazdalovschi/url-shortener/internal/stackerr"
 	"time"
 
 	// This loads the postgres drivers.
@@ -15,6 +16,7 @@ type Service interface {
 	Save(ctx context.Context, apiKey, originalUrl, shortenedId, expiryDate string) error
 	Load(ctx context.Context, shortenedId string) (originalUrl string, err error)
 	Describe(ctx context.Context, shortenedId string) (*domain.Item, error)
+	Delete(ctx context.Context, shortenedId string) error
 	Close() error
 }
 
@@ -30,54 +32,57 @@ func New(cfg Configuration) (Service, error) {
 
 	db, err := sql.Open("postgres", connect)
 	if err != nil {
-		return nil, err
+		return nil, stackerr.Wrap(err)
 	}
 
 	// Ping to connection
 	err = db.Ping()
 	if err != nil {
-		return nil, err
+		return nil, stackerr.Wrap(err)
 	}
 
 	// Create table if not exists
 	strQuery := "CREATE TABLE IF NOT EXISTS url (shortenedId VARCHAR NOT NULL UNIQUE, originalUrl VARCHAR not NULL, " +
 		"apiKey VARCHAR not NULL, creationTime timestamp not NULL, expirationDate timestamp not NULL);"
 
-	_, err = db.Exec(strQuery)
-	if err != nil {
-		return nil, err
+	if _, err = db.Exec(strQuery); err != nil {
+		return nil, stackerr.Wrap(err)
 	}
 	return &postgres{db}, nil
 }
 
 type postgres struct{ db *sql.DB }
 
+const timeStampFormat = "2006-01-02"
+
 func (p *postgres) Save(ctx context.Context, apiKey, originalUrl, shortenedId, expiryDate string) error {
-	_, err := p.db.ExecContext(ctx, "INSERT INTO url (shortenedId, originalUrl, apiKey, creationTime, expirationTime) VALUES ($1, $2, $3, $4, $5)",
-		shortenedId, originalUrl, apiKey, time.Now().String(), expiryDate)
-	return err
+	if _, err := time.Parse(timeStampFormat, expiryDate); err != nil {
+		expiryDate = time.Now().AddDate(1, 0, 0).Format(timeStampFormat)
+	}
+	_, err := p.db.ExecContext(ctx, "INSERT INTO url (shortenedId, originalUrl, apiKey, creationTime, expirationDate) VALUES ($1, $2, $3, NOW(), TO_TIMESTAMP($4, 'YYYY-MM-DD'))",
+		shortenedId, originalUrl, apiKey, expiryDate)
+	return stackerr.Wrap(err)
+}
+
+func (p *postgres) Delete(ctx context.Context, shortenedId string) error {
+	_, err := p.db.ExecContext(ctx, "DELETE FROM url WHERE shortenedId = $1", shortenedId)
+	return stackerr.Wrap(err)
 }
 
 func (p *postgres) Load(ctx context.Context, shortenedId string) (originalUrl string, err error) {
-	res, err := p.db.QueryContext(ctx, "SELECT originalUrl FROM url WHERE shortenedId = $1 limit 1", shortenedId)
+	err = p.db.QueryRowContext(ctx, "SELECT originalUrl FROM url WHERE shortenedId = $1", shortenedId).Scan(&originalUrl)
 	if err != nil {
-		return "", err
+		return "", stackerr.Wrap(err)
 	}
-	item := domain.Item{ShortenedId: shortenedId}
-	if err = res.Scan(&item.OriginalURL); res != nil {
-		return "", err
-	}
-	return item.OriginalURL, nil
+	return originalUrl, nil
 }
 
 func (p *postgres) Describe(ctx context.Context, shortenedId string) (*domain.Item, error) {
-	res, err := p.db.QueryContext(ctx, "SELECT originalUrl, apiKey, enable, expiryDate FROM url WHERE shortenedId = $1 limit 1", shortenedId)
-	if err != nil {
-		return nil, err
-	}
 	item := domain.Item{ShortenedId: shortenedId}
-	if err = res.Scan(&item.OriginalURL, &item.ApiKey, &item.Enabled, &item.ExpiryDate); res != nil {
-		return nil, err
+	query := "SELECT originalUrl, apiKey, expirationDate FROM url WHERE shortenedId = $1"
+	err := p.db.QueryRowContext(ctx, query, shortenedId).Scan(&item.OriginalURL, &item.ApiKey, &item.ExpiryDate)
+	if err != nil {
+		return nil, stackerr.Wrap(err)
 	}
 	return &item, nil
 }

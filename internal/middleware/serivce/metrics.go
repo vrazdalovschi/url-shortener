@@ -15,6 +15,16 @@ type metrics struct {
 	next service.Service
 }
 
+func NewMetrics(rc *prometheus.CounterVec, rs *prometheus.SummaryVec) Middleware {
+	return func(s service.Service) service.Service {
+		return &metrics{
+			next: s,
+			rc:   rc,
+			rs:   rs,
+		}
+	}
+}
+
 func (m *metrics) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (resp *domain.ShortenedIdResponse, err error) {
 	defer func(begin time.Time) {
 		elapsedTime := float64(time.Since(begin).Milliseconds())
@@ -55,12 +65,22 @@ func (m *metrics) Delete(ctx context.Context, shortenedId string) (err error) {
 	return m.next.Delete(ctx, shortenedId)
 }
 
-func NewMetrics(rc *prometheus.CounterVec, rs *prometheus.SummaryVec) Middleware {
-	return func(s service.Service) service.Service {
-		return &metrics{
-			next: s,
-			rc:   rc,
-			rs:   rs,
-		}
-	}
+func (m *metrics) IncrementStats(ctx context.Context, shortenedId string) (err error) {
+	defer func(begin time.Time) {
+		elapsedTime := float64(time.Since(begin).Milliseconds())
+		labels := prometheus.Labels{"method": "IncrementStats", "error": fmt.Sprint(err != nil)}
+		m.rc.With(labels).Add(1)
+		m.rs.With(labels).Observe(elapsedTime)
+	}(time.Now())
+	return m.next.IncrementStats(ctx, shortenedId)
+}
+
+func (m *metrics) Stats(ctx context.Context, shortenedId string) (resp *domain.StatsResponse, err error) {
+	defer func(begin time.Time) {
+		elapsedTime := float64(time.Since(begin).Milliseconds())
+		labels := prometheus.Labels{"method": "Stats", "error": fmt.Sprint(err != nil)}
+		m.rc.With(labels).Add(1)
+		m.rs.With(labels).Observe(elapsedTime)
+	}(time.Now())
+	return m.next.Stats(ctx, shortenedId)
 }

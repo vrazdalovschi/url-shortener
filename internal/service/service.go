@@ -12,6 +12,8 @@ type Service interface {
 	GetOriginalUrl(ctx context.Context, shortenedId string) (originalUrl string, err error)
 	Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error)
 	Delete(ctx context.Context, shortenedId string) error
+	IncrementStats(ctx context.Context, shortenedId string) error
+	Stats(ctx context.Context, shortenedId string) (*domain.StatsResponse, error)
 }
 
 func NewService(st postgres.Service) Service {
@@ -45,12 +47,19 @@ func (s *service) GetOriginalUrl(ctx context.Context, shortenedId string) (origi
 
 func (s *service) Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error) {
 	item, err := s.st.Describe(ctx, shortenedId)
-	if err != nil {
-		return nil, stackerr.Wrap(err)
-	}
-	return item, nil
+	return item, stackerr.Wrap(err)
 }
 
 func (s *service) Delete(ctx context.Context, shortenedId string) error {
 	return s.st.Delete(ctx, shortenedId)
+}
+
+func (s *service) IncrementStats(ctx context.Context, shortenedId string) error {
+	err := s.st.Increment(ctx, shortenedId)
+	return stackerr.Wrap(err)
+}
+
+func (s *service) Stats(ctx context.Context, shortenedId string) (*domain.StatsResponse, error) {
+	stats, err := s.st.Stats(ctx, shortenedId)
+	return stats, stackerr.Wrap(err)
 }

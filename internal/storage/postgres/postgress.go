@@ -15,7 +15,7 @@ import (
 type Service interface {
 	Save(ctx context.Context, apiKey, originalUrl, shortenedId, expiryDate string) error
 	Load(ctx context.Context, shortenedId string) (originalUrl string, err error)
-	Describe(ctx context.Context, shortenedId string) (*domain.Item, error)
+	Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error)
 	Delete(ctx context.Context, shortenedId string) error
 	Close() error
 }
@@ -77,8 +77,8 @@ func (p *postgres) Load(ctx context.Context, shortenedId string) (originalUrl st
 	return originalUrl, nil
 }
 
-func (p *postgres) Describe(ctx context.Context, shortenedId string) (*domain.Item, error) {
-	item := domain.Item{ShortenedId: shortenedId}
+func (p *postgres) Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error) {
+	item := domain.ShortenedIdResponse{ShortenedId: shortenedId}
 	query := "SELECT originalUrl, apiKey, expirationDate FROM url WHERE shortenedId = $1"
 	err := p.db.QueryRowContext(ctx, query, shortenedId).Scan(&item.OriginalURL, &item.ApiKey, &item.ExpiryDate)
 	if err != nil {

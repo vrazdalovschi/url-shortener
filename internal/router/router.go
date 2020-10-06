@@ -2,20 +2,22 @@ package router
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/vrazdalovschi/url-shortener/internal/domain"
 	"github.com/vrazdalovschi/url-shortener/internal/service"
-	"log"
+	"github.com/vrazdalovschi/url-shortener/internal/stackerr"
 	"net/http"
 )
 
 func New(svc service.Service, host string) *mux.Router {
 	r := mux.NewRouter()
 
-	r.Methods("GET").Path("/{shortedUrlId}").HandlerFunc(GetOriginalUrl(svc))
-	r.Methods("POST").Path("/api").HandlerFunc(CreateShortenedId(svc, host))
-	r.Methods("GET").Path("/api/{shortedUrlId}").HandlerFunc(Describe(svc))
-	r.Methods("DELETE").Path("/api/{shortedUrlId}").HandlerFunc(Delete(svc))
+	r.Methods("GET").Path("/{shortenedId}").HandlerFunc(Redirect(svc))
+	r.Methods("POST").Path("/api").HandlerFunc(CreateShortenedId(svc))
+	r.Methods("GET").Path("/api/{shortenedId}").HandlerFunc(Describe(svc))
+	r.Methods("DELETE").Path("/api/{shortenedId}").HandlerFunc(Delete(svc))
 
 	fs := http.FileServer(http.Dir("./api/"))
 	r.PathPrefix("/swaggerui/").Handler(http.StripPrefix("/swaggerui/", fs))
@@ -30,34 +32,34 @@ func New(svc service.Service, host string) *mux.Router {
 	return r
 }
 
-func CreateShortenedId(svc service.Service, host string) func(w http.ResponseWriter, r *http.Request) {
+func CreateShortenedId(svc service.Service) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var crReq createReq
-		if err := json.NewDecoder(r.Body).Decode(&crReq); err != nil {
-			log.Println(err)
-			RespondJson(w, 400, err)
+		var createRequest domain.CreateShortId
+		if err := json.NewDecoder(r.Body).Decode(&createRequest); err != nil {
+			e := domain.Error{
+				Message:   fmt.Sprintf("Invalid request body. Err: %v", stackerr.Wrap(err)),
+				ErrorCode: 400,
+			}
+			RespondError(w, e)
 			return
 		}
-		res, err := svc.CreateShort(r.Context(), crReq.ApiKey, crReq.OriginalUrl, crReq.OriginalUrl)
+		res, err := svc.CreateShort(r.Context(), createRequest.ApiKey, createRequest.OriginalURL, createRequest.ExpiryDate)
 		if err != nil {
-			log.Println(err)
-			RespondJson(w, 400, err)
+			e := domain.Error{Message: fmt.Sprintf("Unexpected error: %v", err), ErrorCode: 500}
+			RespondError(w, e)
 			return
 		}
-		RespondOkJson(w, host+"/"+res)
+		RespondOkJson(w, res)
 	}
 }
 
-func GetOriginalUrl(svc service.Service) func(w http.ResponseWriter, r *http.Request) {
+func Redirect(svc service.Service) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id, ok := mux.Vars(r)["shortedUrlId"]
-		if !ok || id == "" {
-			RespondJson(w, 400, "bad request")
-		}
+		id, _ := mux.Vars(r)["shortenedId"]
 		res, err := svc.GetOriginalUrl(r.Context(), id)
 		if err != nil {
-			log.Println(err)
-			RespondJson(w, 400, err)
+			e := domain.Error{Message: fmt.Sprintf("shortenedId %s not found", id), ErrorCode: 404}
+			RespondError(w, e)
 			return
 		}
 		http.Redirect(w, r, res, http.StatusFound)
@@ -66,14 +68,11 @@ func GetOriginalUrl(svc service.Service) func(w http.ResponseWriter, r *http.Req
 
 func Describe(svc service.Service) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id, ok := mux.Vars(r)["shortedUrlId"]
-		if !ok || id == "" {
-			RespondJson(w, 400, "bad request")
-		}
+		id, _ := mux.Vars(r)["shortenedId"]
 		res, err := svc.Describe(r.Context(), id)
 		if err != nil {
-			log.Println(err)
-			RespondJson(w, 400, err)
+			e := domain.Error{Message: fmt.Sprintf("shortenedId %s not found", id), ErrorCode: 404}
+			RespondError(w, e)
 			return
 		}
 		RespondOkJson(w, res)
@@ -82,22 +81,13 @@ func Describe(svc service.Service) func(w http.ResponseWriter, r *http.Request) 
 
 func Delete(svc service.Service) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id, ok := mux.Vars(r)["shortedUrlId"]
-		if !ok || id == "" {
-			RespondJson(w, 400, "bad request")
-		}
+		id, _ := mux.Vars(r)["shortenedId"]
 		err := svc.Delete(r.Context(), id)
 		if err != nil {
-			log.Println(err)
-			RespondJson(w, 400, err)
+			e := domain.Error{Message: fmt.Sprintf("shortenedId %s not found", id), ErrorCode: 404}
+			RespondError(w, e)
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)
 	}
-}
-
-type createReq struct {
-	ApiKey      string `json:"apiKey"`
-	OriginalUrl string `json:"originalUrl"`
-	ExpiryDate  string `json:"expiryDate"`
 }

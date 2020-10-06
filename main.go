@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/namsral/flag"
+	"github.com/vrazdalovschi/url-shortener/internal/middleware/logging"
 	"github.com/vrazdalovschi/url-shortener/internal/router"
 	"github.com/vrazdalovschi/url-shortener/internal/service"
 	"github.com/vrazdalovschi/url-shortener/internal/storage/postgres"
@@ -37,7 +38,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	svc := service.NewService(st)
+
+	var svc service.Service
+	{
+		svc = service.NewService(st)
+		svc = logging.New()(svc)
+	}
 	r := router.New(svc, *httpAddr)
 
 	errs := make(chan error)

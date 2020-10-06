@@ -8,9 +8,9 @@ import (
 )
 
 type Service interface {
-	CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (string, error)
+	CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (*domain.ShortenedIdResponse, error)
 	GetOriginalUrl(ctx context.Context, shortenedId string) (originalUrl string, err error)
-	Describe(ctx context.Context, shortenedId string) (*domain.Item, error)
+	Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error)
 	Delete(ctx context.Context, shortenedId string) error
 }
 
@@ -22,12 +22,17 @@ type service struct {
 	st postgres.Service
 }
 
-func (s *service) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (string, error) {
+func (s *service) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (*domain.ShortenedIdResponse, error) {
 	shortUrl := GenerateShortUrl(originalUrl)
 	if err := s.st.Save(ctx, apiKey, originalUrl, shortUrl, expiryDate); err != nil {
-		return "", stackerr.Wrap(err)
+		return nil, stackerr.Wrap(err)
 	}
-	return shortUrl, nil
+	return &domain.ShortenedIdResponse{
+		ApiKey:      apiKey,
+		OriginalURL: originalUrl,
+		ShortenedId: shortUrl,
+		ExpiryDate:  expiryDate,
+	}, nil
 }
 
 func (s *service) GetOriginalUrl(ctx context.Context, shortenedId string) (originalUrl string, err error) {
@@ -38,7 +43,7 @@ func (s *service) GetOriginalUrl(ctx context.Context, shortenedId string) (origi
 	return url, nil
 }
 
-func (s *service) Describe(ctx context.Context, shortenedId string) (*domain.Item, error) {
+func (s *service) Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error) {
 	item, err := s.st.Describe(ctx, shortenedId)
 	if err != nil {
 		return nil, stackerr.Wrap(err)

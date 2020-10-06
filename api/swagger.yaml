@@ -36,6 +36,8 @@ paths:
             text/plain:
               schema:
                 $ref: '#/components/schemas/ShortenedIdResponse'
+        400:
+          $ref: '#/components/responses/BadRequest'
         500:
           $ref: '#/components/responses/InternalError'
 
@@ -85,6 +87,14 @@ components:
           schema:
             $ref: '#/components/schemas/CreateShortId'
   responses:
+    BadRequest:
+      description: Bad request body
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: 'invalid request body'
     NotFound:
       description: The specified resource was not found
       content:

@@ -10,6 +10,7 @@ paths:
   /{shortenedId}:
     get:
       summary: Redirect to Original Url
+      description: Redirect and count number of redirections.
       parameters:
         - name: shortenedId
           in: path
@@ -76,6 +77,26 @@ paths:
           $ref: '#/components/responses/NotFound'
         500:
           $ref: '#/components/responses/InternalError'
+  /api/stats/{shortenedId}:
+    get:
+      summary: Get redirection stats
+      parameters:
+        - name: shortenedId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: shortenedId redirections stats
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ShortenedIdStatsResponse'
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/InternalError'
 
 components:
   requestBodies:
@@ -119,7 +140,7 @@ components:
         apiKey:
           type: string
           required: false
-          description: Optional ApiKey for link shorted links to one account. For example for statistics. If missing, then random generated on server-side.
+          description: Optional ApiKey for link shorted links to one account. For example for statistics.
           example: 'MySecretId'
         originalUrl:
           type: string
@@ -156,6 +177,26 @@ components:
           description: 'Expiration date for the shortened url. Default value: Today + 1 year.'
           pattern: 'YYYY-MM-DD'
           example: '2021-01-01'
+
+    ShortenedIdStatsResponse:
+      type: object
+      properties:
+        shortenedId:
+          type: string
+          required: true
+          example: '3saq1Sq1'
+        redirects:
+          type: number
+          required: true
+          description: number of redirects
+          default: 0
+          example: 100
+        lastRedirect:
+          type: string
+          required: true
+          description: 'Last date accessed (redirect)'
+          default: ""
+          example: "2020-10-06T21:58:01Z"
 
     Error:
       type: object

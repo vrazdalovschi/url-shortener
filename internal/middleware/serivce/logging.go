@@ -57,7 +57,6 @@ func (l *loggingMiddleware) Describe(ctx context.Context, shortenedId string) (r
 
 	return l.next.Describe(ctx, shortenedId)
 }
-
 func (l *loggingMiddleware) Delete(ctx context.Context, shortenedId string) (err error) {
 	defer func(begin time.Time) {
 		log.Println("method", "Delete",
@@ -67,4 +66,27 @@ func (l *loggingMiddleware) Delete(ctx context.Context, shortenedId string) (err
 	}(time.Now())
 
 	return l.next.Delete(ctx, shortenedId)
+}
+
+func (l *loggingMiddleware) IncrementStats(ctx context.Context, shortenedId string) (err error) {
+	defer func(begin time.Time) {
+		log.Println("method", "IncrementStats",
+			"shortenedId", shortenedId,
+			"err", err,
+			"duration", time.Since(begin))
+	}(time.Now())
+
+	return l.next.IncrementStats(ctx, shortenedId)
+}
+
+func (l *loggingMiddleware) Stats(ctx context.Context, shortenedId string) (resp *domain.StatsResponse, err error) {
+	defer func(begin time.Time) {
+		log.Println("method", "Stats",
+			"shortenedId", shortenedId,
+			"err", err,
+			"resp", resp,
+			"duration", time.Since(begin))
+	}(time.Now())
+
+	return l.next.Stats(ctx, shortenedId)
 }

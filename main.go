@@ -5,7 +5,7 @@ import (
 	"github.com/namsral/flag"
 	"github.com/prometheus/client_golang/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	"github.com/vrazdalovschi/url-shortener/internal/middleware/serivce"
+	serivcemiddleware "github.com/vrazdalovschi/url-shortener/internal/middleware/serivce"
 	"github.com/vrazdalovschi/url-shortener/internal/router"
 	"github.com/vrazdalovschi/url-shortener/internal/service"
 	"github.com/vrazdalovschi/url-shortener/internal/storage/postgres"
@@ -20,7 +20,7 @@ import (
 func main() {
 	fs := flag.NewFlagSetWithEnvPrefix(os.Args[0], "", flag.ExitOnError)
 	var (
-		httpAddr   = fs.String("HTTP_ADDR", "localhost:8080", "HTTP endpoint to use for endpoints")
+		httpAddr   = fs.String("HTTP_ADDR", ":8080", "HTTP endpoint to use for endpoints")
 		dbHost     = fs.String("DB_HOST", "localhost", "DB Host")
 		dbPort     = fs.String("DB_PORT", "5432", "DB Port")
 		dbUser     = fs.String("DB_USER", "url-shortener", "DB Username")
@@ -64,7 +64,7 @@ func main() {
 		svc = serivcemiddleware.NewLogging()(svc)
 		svc = serivcemiddleware.NewMetrics(requestCounter, requestLatencySummary)(svc)
 	}
-	r := router.New(svc, *httpAddr)
+	r := router.New(svc)
 
 	errs := make(chan error)
 	go func() {

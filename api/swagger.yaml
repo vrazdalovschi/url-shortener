@@ -3,48 +3,153 @@ info:
   title: URL-Shortener
   version: 0.1.0
 servers:
-  - url: http://localhost:4543/
+  - url: http://localhost:8080/
     description: Local Deployment
 
 paths:
-  /api:
-    post:
-      summary: Returns a list of users.
-      description: Optional extended description in CommonMark or HTML.
-      responses:
-        '200':
-          description: Short url is generated
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: 'http://localhost:4543/A1s23Sa'
-        '500':
-          description: Internal Error
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: 'Internal Error. Please, Try again later.'
-
-  /api/{id}:
+  /{shortenedId}:
     get:
-      summary: Return full url
+      summary: Redirect to Original Url
       parameters:
-        - name: id
+        - name: shortenedId
           in: path
-          description: Generated short URL ID
           required: true
           schema:
             type: string
       responses:
-        '200':
-          description: Success, url exists
+        302:
+          description: Redirect to the Original Url
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/InternalError'
+  /api:
+    post:
+      summary: Generate shortened url
+      requestBody:
+        $ref: '#/components/requestBodies/CreateShortUrlRequest'
+
+      responses:
+        200:
+          description: shortenedId is generated
           content:
             text/plain:
               schema:
-                type: string
-                example: 'https://www.full.magic.url?id=123'
+                $ref: '#/components/schemas/ShortenedIdResponse'
+        500:
+          $ref: '#/components/responses/InternalError'
 
-        '404':
-          description: Not found
+  /api/{shortenedId}:
+    get:
+      summary: Describe shortened id
+      parameters:
+        - name: shortenedId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success, shortenedId exists
+          content:
+            text/plain:
+              schema:
+                $ref: '#/components/schemas/ShortenedIdResponse'
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/InternalError'
+    delete:
+      summary: Delete shortened id
+      parameters:
+        - name: shortenedId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: 'ShortenedUrl was deleted successfully.'
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/InternalError'
+
+components:
+  requestBodies:
+    CreateShortUrlRequest:
+      description: A JSON object containing URL information
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateShortId'
+  responses:
+    NotFound:
+      description: The specified resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: 'shortenedId {as1sW123} is not found'
+    InternalError:
+      description: Internal Error, Try again later.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            message: 'Internal Error, Try again later.'
+
+  schemas:
+    CreateShortId:
+      type: object
+      properties:
+        apiKey:
+          type: string
+          required: false
+          description: Optional ApiKey for link shorted links to one account. For example for statistics. If missing, then random generated on server-side.
+          example: 'MySecretId'
+        originalUrl:
+          type: string
+          required: true
+          description: Valid URL thah should be shortened.
+          example: 'http://www.google.com/find_me'
+        expiryDate:
+          type: string
+          required: false
+          description: 'Expiration date for the shortened url. Default value: Today + 1 year.'
+          pattern: 'YYYY-MM-DD'
+          example: '2021-01-01'
+
+    ShortenedIdResponse:
+      type: object
+      properties:
+        shortenedId:
+          type: string
+          required: true
+          example: '3saq1Sq1'
+        apiKey:
+          type: string
+          required: true
+          description: Optional ApiKey for link shorted links to one account. For example for statistics. If missing, then random generated on server-side.
+          example: 'MySecretId'
+        originalUrl:
+          type: string
+          required: true
+          description: Valid URL thah should be shortened.
+          example: 'http://www.google.com/find_me'
+        expiryDate:
+          type: string
+          required: true
+          description: 'Expiration date for the shortened url. Default value: Today + 1 year.'
+          pattern: 'YYYY-MM-DD'
+          example: '2021-01-01'
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          required: true

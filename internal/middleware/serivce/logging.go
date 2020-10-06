@@ -1,4 +1,4 @@
-package logging
+package serivcemiddleware
 
 import (
 	"context"
@@ -12,15 +12,13 @@ type loggingMiddleware struct {
 	next service.Service
 }
 
-func New() Middleware {
+func NewLogging() Middleware {
 	return func(s service.Service) service.Service {
 		return &loggingMiddleware{
 			next: s,
 		}
 	}
 }
-
-type Middleware func(service.Service) service.Service
 
 func (l *loggingMiddleware) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (resp *domain.ShortenedIdResponse, err error) {
 	defer func(begin time.Time) {

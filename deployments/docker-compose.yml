@@ -6,7 +6,6 @@ services:
     build: ./..
     depends_on:
       - db
-      - redis
     ports:
       - "8080:8080"
     environment:
@@ -15,17 +14,6 @@ services:
       DB_USER: shortener
       DB_PASSWORD: shortener
       DB_NAME: shortener
-  redis:
-    image: redis:alpine
-    deploy:
-      replicas: 6
-      placement:
-        max_replicas_per_node: 1
-      update_config:
-        parallelism: 2
-        delay: 10s
-      restart_policy:
-        condition: on-failure
   db:
     image: postgres
     volumes:

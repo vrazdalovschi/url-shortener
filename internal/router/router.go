@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"github.com/vrazdalovschi/url-shortener/internal/domain"
 	"github.com/vrazdalovschi/url-shortener/internal/service"
@@ -27,6 +28,7 @@ func New(svc service.Service, host string) *mux.Router {
 		httpSwagger.DocExpansion("none"),
 		httpSwagger.DomID("#swagger-ui"),
 	))
+	r.Handle("/internal/metrics", promhttp.Handler())
 	http.Handle("/", r)
 
 	return r

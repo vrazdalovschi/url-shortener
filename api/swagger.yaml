@@ -139,68 +139,68 @@ components:
       properties:
         apiKey:
           type: string
-          required: false
           description: Optional ApiKey for link shorted links to one account. For example for statistics.
           example: 'MySecretId'
         originalUrl:
           type: string
-          required: true
           description: Valid URL thah should be shortened.
           example: 'http://www.google.com/find_me'
         expiryDate:
           type: string
-          required: false
           description: 'Expiration date for the shortened url. Default value: Today + 1 year.'
           pattern: 'YYYY-MM-DD'
           example: '2021-01-01'
+      required:
+        - originalUrl
 
     ShortenedIdResponse:
       type: object
       properties:
         shortenedId:
           type: string
-          required: true
           example: '3saq1Sq1'
         apiKey:
           type: string
-          required: true
           description: Optional ApiKey for link shorted links to one account. For example for statistics. If missing, then random generated on server-side.
           example: 'MySecretId'
         originalUrl:
           type: string
-          required: true
           description: Valid URL thah should be shortened.
           example: 'http://www.google.com/find_me'
         expiryDate:
           type: string
-          required: true
           description: 'Expiration date for the shortened url. Default value: Today + 1 year.'
           pattern: 'YYYY-MM-DD'
           example: '2021-01-01'
+      required:
+        - originalUrl
+        - shortenedId
+        - expiryDate
 
     ShortenedIdStatsResponse:
       type: object
       properties:
         shortenedId:
           type: string
-          required: true
           example: '3saq1Sq1'
         redirects:
           type: number
-          required: true
-          description: number of redirects
+          description: redirections count
           default: 0
           example: 100
         lastRedirect:
           type: string
-          required: true
           description: 'Last date accessed (redirect)'
           default: ""
           example: "2020-10-06T21:58:01Z"
+      required:
+        - shortenedId
+        - redirects
 
     Error:
       type: object
       properties:
         message:
           type: string
-          required: true
+      required:
+        - message

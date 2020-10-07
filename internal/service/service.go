@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/vrazdalovschi/url-shortener/internal/domain"
 	"github.com/vrazdalovschi/url-shortener/internal/stackerr"
 	"github.com/vrazdalovschi/url-shortener/internal/storage/postgres"
+	"net/url"
 )
 
 type Service interface {
@@ -25,6 +27,12 @@ type service struct {
 }
 
 func (s *service) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (*domain.ShortenedIdResponse, error) {
+	_, err := url.Parse(originalUrl)
+	if err != nil {
+		err = domain.Error{Message: fmt.Sprintf("Invalid originalUrl %v", err), ErrorCode: 400}
+		return nil, stackerr.Wrap(err)
+	}
+
 	shortUrl := GenerateShortUrl(originalUrl)
 	if err := s.st.Save(ctx, apiKey, originalUrl, shortUrl, expiryDate); err != nil {
 		return nil, stackerr.Wrap(err)
@@ -38,11 +46,11 @@ func (s *service) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDa
 }
 
 func (s *service) GetOriginalUrl(ctx context.Context, shortenedId string) (originalUrl string, err error) {
-	url, err := s.st.Load(ctx, shortenedId)
+	originalUrl, err = s.st.Load(ctx, shortenedId)
 	if err != nil {
 		return "", stackerr.Wrap(err)
 	}
-	return url, nil
+	return originalUrl, nil
 }
 
 func (s *service) Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error) {

@@ -8,8 +8,11 @@ import (
 	"time"
 )
 
-func GenerateShortUrl(originalUrl string) string {
-	compoundKey := fmt.Sprintf("%s_%s", originalUrl, time.Now().String())
+// Generate random shortId.
+// Should be unique each time and shouldn't repeat for the same url
+// Limitations: the same parameters and in the same time, then would be generating the same shortId.
+func GenerateShortUrl(apiKey, originalUrl string) string {
+	compoundKey := fmt.Sprintf("%s_%s_%s", apiKey, originalUrl, time.Now().String())
 	generatedKey := hash(compoundKey)[0:6]
 	encodedResult := base62.StdEncoding.EncodeToString([]byte(generatedKey))
 	return encodedResult

@@ -48,6 +48,12 @@ func CreateShortenedId(svc service.Service) func(w http.ResponseWriter, r *http.
 		}
 		res, err := svc.CreateShort(r.Context(), createRequest.ApiKey, createRequest.OriginalURL, createRequest.ExpiryDate)
 		if err != nil {
+			if wrapped, ok := err.(stackerr.HandledError); ok {
+				if e, ok := wrapped.Inner().(domain.Error); ok {
+					RespondError(w, e)
+					return
+				}
+			}
 			e := domain.Error{Message: fmt.Sprintf("Unexpected error: %v", err), ErrorCode: 500}
 			RespondError(w, e)
 			return

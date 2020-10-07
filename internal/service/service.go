@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/vrazdalovschi/url-shortener/internal/domain"
 	"github.com/vrazdalovschi/url-shortener/internal/stackerr"
 	"github.com/vrazdalovschi/url-shortener/internal/storage/postgres"
 	"net/url"
+	"time"
 )
 
 type Service interface {
@@ -26,14 +28,24 @@ type service struct {
 	st postgres.Service
 }
 
+const timeStampFormat = "2006-01-02"
+
+// Create short url for apiKey, originalUrl, expiryDate
+// Mandatory parameter is originalUrl
+// Default value for expiryDate is one year
 func (s *service) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (*domain.ShortenedIdResponse, error) {
-	_, err := url.Parse(originalUrl)
-	if err != nil {
-		err = domain.Error{Message: fmt.Sprintf("Invalid originalUrl %v", err), ErrorCode: 400}
+	if !isValidUrl(originalUrl) {
+		err := domain.Error{Message: fmt.Sprintf("Invalid originalUrl %s", originalUrl), ErrorCode: 400}
 		return nil, stackerr.Wrap(err)
 	}
-
-	shortUrl := GenerateShortUrl(originalUrl)
+	if apiKey == "" {
+		apiKey = uuid.New().String()
+	}
+	//Ignore invalid expiryDate, set default: +1 year
+	if _, err := time.Parse(timeStampFormat, expiryDate); err != nil {
+		expiryDate = time.Now().AddDate(1, 0, 0).Format(timeStampFormat)
+	}
+	shortUrl := GenerateShortUrl(apiKey, originalUrl)
 	if err := s.st.Save(ctx, apiKey, originalUrl, shortUrl, expiryDate); err != nil {
 		return nil, stackerr.Wrap(err)
 	}
@@ -45,12 +57,14 @@ func (s *service) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDa
 	}, nil
 }
 
+func isValidUrl(str string) bool {
+	u, err := url.ParseRequestURI(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
 func (s *service) GetOriginalUrl(ctx context.Context, shortenedId string) (originalUrl string, err error) {
 	originalUrl, err = s.st.Load(ctx, shortenedId)
-	if err != nil {
-		return "", stackerr.Wrap(err)
-	}
-	return originalUrl, nil
+	return originalUrl, stackerr.Wrap(err)
 }
 
 func (s *service) Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error) {

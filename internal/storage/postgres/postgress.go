@@ -59,13 +59,7 @@ func New(cfg Configuration) (Service, error) {
 
 type postgres struct{ db *sql.DB }
 
-const timeStampFormat = "2006-01-02"
-
 func (p *postgres) Save(ctx context.Context, apiKey, originalUrl, shortenedId, expiryDate string) error {
-	if _, err := time.Parse(timeStampFormat, expiryDate); err != nil {
-		expiryDate = time.Now().AddDate(1, 0, 0).Format(timeStampFormat)
-	}
-
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
 		return stackerr.Wrap(err)

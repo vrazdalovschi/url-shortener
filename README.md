@@ -9,6 +9,26 @@ URL Shortener service in Go. Functionality:
 * Check statistic: redirections count, lastRedirectTime
 
 
+
+## API Documentation
+
+##### SwaggerHub 
+```http request
+https://app.swaggerhub.com/apis/vrazdalovschi/url-shortener/0.1.0-oas3 
+```
+
+API docs are available by swagger ([api/swagger.yaml](api/swagger.yaml)). 
+Just deploy using docker-compose:
+
+#### Api Definition
+```http request
+http://localhost:8080/swaggerui/swagger.yaml
+```
+#### SwaggerUi
+```http request
+http://localhost:8080/swagger/index.html
+```
+
 ## Run
 Run with Docker (deployments folder)
 
@@ -69,18 +89,6 @@ CREATE TABLE IF NOT EXISTS stats
 * Better error handling
 * Distributed caching
 * SQL Schema migration
-
-## Api Examples
-Api description is located in api folder. 
-
-### Api Definition
-```http request
-http://localhost:8080/swaggerui/swagger.yaml
-```
-### SwaggerUi
-```http request
-http://localhost:8080/swagger/index.html
-```
 
 ## Instrumentation
 Prometheus metrics:

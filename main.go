@@ -57,6 +57,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer st.Close()
 
 	var svc service.Service
 	{

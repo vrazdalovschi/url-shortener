@@ -19,6 +19,7 @@ type Service interface {
 	Delete(ctx context.Context, shortenedId string) error
 	Increment(ctx context.Context, shortenedId string) error
 	Stats(ctx context.Context, shortenedId string) (*domain.StatsResponse, error)
+	Close() error
 }
 
 type Configuration struct {
@@ -136,4 +137,8 @@ func (p *postgres) Stats(ctx context.Context, shortenedId string) (*domain.Stats
 		item.LastRedirect = nullableDate.Time.Format(time.RFC3339)
 	}
 	return &item, nil
+}
+
+func (p *postgres) Close() error {
+	return p.db.Close()
 }

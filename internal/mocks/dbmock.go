@@ -42,3 +42,8 @@ func (m *MockedPostgres) Stats(ctx context.Context, shortenedId string) (*domain
 	called := m.Called(ctx, shortenedId)
 	return called.Get(0).(*domain.StatsResponse), called.Error(1)
 }
+
+func (m *MockedPostgres) Close() error {
+	called := m.Called()
+	return called.Error(0)
+}

@@ -5,27 +5,27 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/vrazdalovschi/url-shortener/internal/domain"
+	"github.com/vrazdalovschi/url-shortener/internal/repository"
 	"github.com/vrazdalovschi/url-shortener/internal/stackerr"
-	"github.com/vrazdalovschi/url-shortener/internal/storage/postgres"
 	"net/url"
 	"time"
 )
 
 type Service interface {
-	CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (*domain.ShortenedIdResponse, error)
+	CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (*repository.ShortenedIdResponse, error)
 	GetOriginalUrl(ctx context.Context, shortenedId string) (originalUrl string, err error)
-	Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error)
+	Describe(ctx context.Context, shortenedId string) (*repository.ShortenedIdResponse, error)
 	Delete(ctx context.Context, shortenedId string) error
 	IncrementStats(ctx context.Context, shortenedId string) error
-	Stats(ctx context.Context, shortenedId string) (*domain.StatsResponse, error)
+	Stats(ctx context.Context, shortenedId string) (*repository.StatsResponse, error)
 }
 
-func NewService(st postgres.Service) Service {
+func NewService(st repository.Repository) Service {
 	return &service{st: st}
 }
 
 type service struct {
-	st postgres.Service
+	st repository.Repository
 }
 
 const timeStampFormat = "2006-01-02"
@@ -33,7 +33,7 @@ const timeStampFormat = "2006-01-02"
 // Create short url for apiKey, originalUrl, expiryDate
 // Mandatory parameter is originalUrl
 // Default value for expiryDate is one year
-func (s *service) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (*domain.ShortenedIdResponse, error) {
+func (s *service) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (*repository.ShortenedIdResponse, error) {
 	if !isValidUrl(originalUrl) {
 		err := domain.Error{Message: fmt.Sprintf("Invalid originalUrl %s", originalUrl), ErrorCode: 400}
 		return nil, stackerr.Wrap(err)
@@ -49,7 +49,7 @@ func (s *service) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDa
 	if err := s.st.Save(ctx, apiKey, originalUrl, shortUrl, expiryDate); err != nil {
 		return nil, stackerr.Wrap(err)
 	}
-	return &domain.ShortenedIdResponse{
+	return &repository.ShortenedIdResponse{
 		ApiKey:      apiKey,
 		OriginalURL: originalUrl,
 		ShortenedId: shortUrl,
@@ -67,7 +67,7 @@ func (s *service) GetOriginalUrl(ctx context.Context, shortenedId string) (origi
 	return originalUrl, stackerr.Wrap(err)
 }
 
-func (s *service) Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error) {
+func (s *service) Describe(ctx context.Context, shortenedId string) (*repository.ShortenedIdResponse, error) {
 	item, err := s.st.Describe(ctx, shortenedId)
 	return item, stackerr.Wrap(err)
 }
@@ -81,7 +81,7 @@ func (s *service) IncrementStats(ctx context.Context, shortenedId string) error 
 	return stackerr.Wrap(err)
 }
 
-func (s *service) Stats(ctx context.Context, shortenedId string) (*domain.StatsResponse, error) {
+func (s *service) Stats(ctx context.Context, shortenedId string) (*repository.StatsResponse, error) {
 	stats, err := s.st.Stats(ctx, shortenedId)
 	return stats, stackerr.Wrap(err)
 }

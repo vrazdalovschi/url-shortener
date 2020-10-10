@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/vrazdalovschi/url-shortener/internal/domain"
+	"github.com/vrazdalovschi/url-shortener/internal/repository"
 	"github.com/vrazdalovschi/url-shortener/internal/stackerr"
 	"time"
 
@@ -12,22 +12,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type Service interface {
-	Save(ctx context.Context, apiKey, originalUrl, shortenedId, expiryDate string) error
-	Load(ctx context.Context, shortenedId string) (originalUrl string, err error)
-	Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error)
-	Delete(ctx context.Context, shortenedId string) error
-	Increment(ctx context.Context, shortenedId string) error
-	Stats(ctx context.Context, shortenedId string) (*domain.StatsResponse, error)
-	Close() error
-}
-
-type Configuration struct {
-	Host, Port, User, Password, DbName string
-}
-
-// New returns a postgres backed storage service.
-func New(cfg Configuration) (Service, error) {
+// NewRepository returns a postgres backed storage service.
+func NewRepository(cfg repository.Configuration) (repository.Repository, error) {
 	// Connect postgres
 	connect := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DbName)
@@ -110,8 +96,8 @@ func (p *postgres) Load(ctx context.Context, shortenedId string) (originalUrl st
 	return originalUrl, nil
 }
 
-func (p *postgres) Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error) {
-	item := domain.ShortenedIdResponse{ShortenedId: shortenedId}
+func (p *postgres) Describe(ctx context.Context, shortenedId string) (*repository.ShortenedIdResponse, error) {
+	item := repository.ShortenedIdResponse{ShortenedId: shortenedId}
 	query := "SELECT originalUrl, apiKey, expirationDate FROM url WHERE shortenedId = $1"
 	err := p.db.QueryRowContext(ctx, query, shortenedId).Scan(&item.OriginalURL, &item.ApiKey, &item.ExpiryDate)
 	if err != nil {
@@ -125,8 +111,8 @@ func (p *postgres) Increment(ctx context.Context, shortenedId string) error {
 	return stackerr.Wrap(err)
 }
 
-func (p *postgres) Stats(ctx context.Context, shortenedId string) (*domain.StatsResponse, error) {
-	item := domain.StatsResponse{ShortenedId: shortenedId}
+func (p *postgres) Stats(ctx context.Context, shortenedId string) (*repository.StatsResponse, error) {
+	item := repository.StatsResponse{ShortenedId: shortenedId}
 	query := "SELECT redirects, visitDate FROM stats WHERE shortenedId = $1"
 	var nullableDate sql.NullTime
 	err := p.db.QueryRowContext(ctx, query, shortenedId).Scan(&item.Redirects, &nullableDate)

@@ -7,7 +7,7 @@ import (
 	"context"
 	"github.com/ory/dockertest"
 	"github.com/stretchr/testify/require"
-	"github.com/vrazdalovschi/url-shortener/internal/domain"
+	"github.com/vrazdalovschi/url-shortener/internal/repository"
 	"log"
 	"os"
 	"testing"
@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	svc Service
+	svc repository.Repository
 )
 
 var (
@@ -44,7 +44,7 @@ func TestPostgres(t *testing.T) {
 	//Read stats default
 	stats, err := svc.Stats(context.Background(), shortenedId)
 	require.NoError(t, err)
-	expectedStats := &domain.StatsResponse{
+	expectedStats := &repository.StatsResponse{
 		ShortenedId:  shortenedId,
 		Redirects:    0,
 		LastRedirect: "",
@@ -71,7 +71,7 @@ func TestPostgres(t *testing.T) {
 	tt := time.Now().AddDate(1, 0, 0)
 	expectedExpiryDate := time.Date(tt.Year(), tt.Month(), tt.Day(), 0, 0, 0, 0, time.UTC)
 
-	expectedDescription := &domain.ShortenedIdResponse{
+	expectedDescription := &repository.ShortenedIdResponse{
 		ApiKey:      "apiKey",
 		OriginalURL: url,
 		ShortenedId: shortenedId,
@@ -122,14 +122,14 @@ func TestMain(m *testing.M) {
 	}
 
 	if err = pool.Retry(func() error {
-		cfg := Configuration{
+		cfg := repository.Configuration{
 			Host:     "localhost",
 			Port:     port,
 			User:     user,
 			Password: password,
 			DbName:   db,
 		}
-		svc, err = New(cfg)
+		svc, err = NewRepository(cfg)
 		return err
 	}); err != nil {
 		log.Fatalf("Could not connect to docker: %s", err.Error())

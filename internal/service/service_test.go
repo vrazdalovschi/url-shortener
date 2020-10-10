@@ -5,8 +5,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/vrazdalovschi/url-shortener/internal/domain"
 	"github.com/vrazdalovschi/url-shortener/internal/mocks"
+	"github.com/vrazdalovschi/url-shortener/internal/repository"
 	"testing"
 	"time"
 )
@@ -60,7 +60,7 @@ func TestService_CreateShort(t *testing.T) {
 	actualRes, err := svc.CreateShort(context.Background(), "", originalUrl, "")
 	require.NoError(t, err)
 
-	expectedRes := &domain.ShortenedIdResponse{
+	expectedRes := &repository.ShortenedIdResponse{
 		ApiKey:      expectedApikey,
 		OriginalURL: originalUrl,
 		ShortenedId: expectedShortKey,

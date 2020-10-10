@@ -5,7 +5,7 @@ import (
 	"github.com/namsral/flag"
 	"github.com/prometheus/client_golang/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	serivcemiddleware "github.com/vrazdalovschi/url-shortener/internal/middleware/serivce"
+	serivcemiddleware "github.com/vrazdalovschi/url-shortener/internal/middleware/service"
 	"github.com/vrazdalovschi/url-shortener/internal/repository"
 	"github.com/vrazdalovschi/url-shortener/internal/repository/postgres"
 	"github.com/vrazdalovschi/url-shortener/internal/router"

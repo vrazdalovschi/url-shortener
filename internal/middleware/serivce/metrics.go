@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vrazdalovschi/url-shortener/internal/domain"
+	"github.com/vrazdalovschi/url-shortener/internal/repository"
 	"github.com/vrazdalovschi/url-shortener/internal/service"
 	"time"
 )
@@ -25,7 +25,7 @@ func NewMetrics(rc *prometheus.CounterVec, rs *prometheus.SummaryVec) Middleware
 	}
 }
 
-func (m *metrics) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (resp *domain.ShortenedIdResponse, err error) {
+func (m *metrics) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (resp *repository.ShortenedIdResponse, err error) {
 	defer func(begin time.Time) {
 		elapsedTime := float64(time.Since(begin).Milliseconds())
 		labels := prometheus.Labels{"method": "CreateShort", "error": fmt.Sprint(err != nil)}
@@ -45,7 +45,7 @@ func (m *metrics) GetOriginalUrl(ctx context.Context, shortenedId string) (origi
 	return m.next.GetOriginalUrl(ctx, shortenedId)
 }
 
-func (m *metrics) Describe(ctx context.Context, shortenedId string) (resp *domain.ShortenedIdResponse, err error) {
+func (m *metrics) Describe(ctx context.Context, shortenedId string) (resp *repository.ShortenedIdResponse, err error) {
 	defer func(begin time.Time) {
 		elapsedTime := float64(time.Since(begin).Milliseconds())
 		labels := prometheus.Labels{"method": "Describe", "error": fmt.Sprint(err != nil)}
@@ -75,7 +75,7 @@ func (m *metrics) IncrementStats(ctx context.Context, shortenedId string) (err e
 	return m.next.IncrementStats(ctx, shortenedId)
 }
 
-func (m *metrics) Stats(ctx context.Context, shortenedId string) (resp *domain.StatsResponse, err error) {
+func (m *metrics) Stats(ctx context.Context, shortenedId string) (resp *repository.StatsResponse, err error) {
 	defer func(begin time.Time) {
 		elapsedTime := float64(time.Since(begin).Milliseconds())
 		labels := prometheus.Labels{"method": "Stats", "error": fmt.Sprint(err != nil)}

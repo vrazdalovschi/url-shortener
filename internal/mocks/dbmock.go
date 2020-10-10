@@ -3,7 +3,7 @@ package mocks
 import (
 	"context"
 	"github.com/stretchr/testify/mock"
-	"github.com/vrazdalovschi/url-shortener/internal/domain"
+	"github.com/vrazdalovschi/url-shortener/internal/repository"
 )
 
 type MockedPostgres struct {
@@ -24,9 +24,9 @@ func (m *MockedPostgres) Load(ctx context.Context, shortenedId string) (original
 	return called.String(0), called.Error(1)
 }
 
-func (m *MockedPostgres) Describe(ctx context.Context, shortenedId string) (*domain.ShortenedIdResponse, error) {
+func (m *MockedPostgres) Describe(ctx context.Context, shortenedId string) (*repository.ShortenedIdResponse, error) {
 	called := m.Called(ctx, shortenedId)
-	return called.Get(0).(*domain.ShortenedIdResponse), called.Error(1)
+	return called.Get(0).(*repository.ShortenedIdResponse), called.Error(1)
 }
 
 func (m *MockedPostgres) Delete(ctx context.Context, shortenedId string) error {
@@ -38,9 +38,9 @@ func (m *MockedPostgres) Increment(ctx context.Context, shortenedId string) erro
 	called := m.Called(ctx, shortenedId)
 	return called.Error(0)
 }
-func (m *MockedPostgres) Stats(ctx context.Context, shortenedId string) (*domain.StatsResponse, error) {
+func (m *MockedPostgres) Stats(ctx context.Context, shortenedId string) (*repository.StatsResponse, error) {
 	called := m.Called(ctx, shortenedId)
-	return called.Get(0).(*domain.StatsResponse), called.Error(1)
+	return called.Get(0).(*repository.StatsResponse), called.Error(1)
 }
 
 func (m *MockedPostgres) Close() error {

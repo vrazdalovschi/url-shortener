@@ -6,9 +6,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	serivcemiddleware "github.com/vrazdalovschi/url-shortener/internal/middleware/serivce"
+	"github.com/vrazdalovschi/url-shortener/internal/repository"
+	"github.com/vrazdalovschi/url-shortener/internal/repository/postgres"
 	"github.com/vrazdalovschi/url-shortener/internal/router"
 	"github.com/vrazdalovschi/url-shortener/internal/service"
-	"github.com/vrazdalovschi/url-shortener/internal/storage/postgres"
 	"log"
 	"os"
 	"os/signal"
@@ -46,14 +47,14 @@ func main() {
 	requestLatencySummary := prometheus.NewSummaryVec(summaryOpts, labelNames)
 	prometheus.MustRegister(requestCounter, requestLatencySummary)
 
-	configuration := postgres.Configuration{
+	configuration := repository.Configuration{
 		Host:     *dbHost,
 		Port:     *dbPort,
 		User:     *dbUser,
 		Password: *dbPassword,
 		DbName:   *dbName,
 	}
-	st, err := postgres.New(configuration)
+	st, err := postgres.NewRepository(configuration)
 	if err != nil {
 		log.Fatal(err)
 	}

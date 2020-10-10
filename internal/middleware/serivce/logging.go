@@ -2,7 +2,7 @@ package serivcemiddleware
 
 import (
 	"context"
-	"github.com/vrazdalovschi/url-shortener/internal/domain"
+	"github.com/vrazdalovschi/url-shortener/internal/repository"
 	"github.com/vrazdalovschi/url-shortener/internal/service"
 	"log"
 	"time"
@@ -20,7 +20,7 @@ func NewLogging() Middleware {
 	}
 }
 
-func (l *loggingMiddleware) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (resp *domain.ShortenedIdResponse, err error) {
+func (l *loggingMiddleware) CreateShort(ctx context.Context, apiKey, originalUrl, expiryDate string) (resp *repository.ShortenedIdResponse, err error) {
 	defer func(begin time.Time) {
 		log.Println("method", "CreateShort",
 			"apiKey", apiKey,
@@ -46,7 +46,7 @@ func (l *loggingMiddleware) GetOriginalUrl(ctx context.Context, shortenedId stri
 	return l.next.GetOriginalUrl(ctx, shortenedId)
 }
 
-func (l *loggingMiddleware) Describe(ctx context.Context, shortenedId string) (resp *domain.ShortenedIdResponse, err error) {
+func (l *loggingMiddleware) Describe(ctx context.Context, shortenedId string) (resp *repository.ShortenedIdResponse, err error) {
 	defer func(begin time.Time) {
 		log.Println("method", "Describe",
 			"shortenedId", shortenedId,
@@ -79,7 +79,7 @@ func (l *loggingMiddleware) IncrementStats(ctx context.Context, shortenedId stri
 	return l.next.IncrementStats(ctx, shortenedId)
 }
 
-func (l *loggingMiddleware) Stats(ctx context.Context, shortenedId string) (resp *domain.StatsResponse, err error) {
+func (l *loggingMiddleware) Stats(ctx context.Context, shortenedId string) (resp *repository.StatsResponse, err error) {
 	defer func(begin time.Time) {
 		log.Println("method", "Stats",
 			"shortenedId", shortenedId,
